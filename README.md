@@ -113,4 +113,4 @@ We welcome contributions! Please see our CONTRIBUTING.md for guidelines on submi
 
 📝 License
 
-This project is licensed under the [Specify License, e.g., MIT] License. See the LICENSE file for details.
+This project is licensed under the  GNU GENERAL PUBLIC LICENSE. See the LICENSE file for details.
