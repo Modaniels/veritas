@@ -1,74 +1,49 @@
-const {
-  Client,
-  PrivateKey,
-  AccountId,
-  TokenMintTransaction,
-  Hbar
-} = require("@hashgraph/sdk");
+/**
+ * IMPORTANT: Hedera SDK cannot run in browser!
+ * This is a mock implementation for demo purposes.
+ * In production, all Hedera operations MUST go through a backend API.
+ */
 
 /**
- * Initialize Hedera Client (Browser-compatible version)
- * Note: In production, use a backend API to handle private keys securely
+ * Mock Hedera Client for browser
+ * In production: Create a backend API endpoint
  */
 export function initializeHederaClient(operatorId, operatorKey, network = "testnet") {
-  try {
-    let client;
-    if (network === "mainnet") {
-      client = Client.forMainnet();
-    } else {
-      client = Client.forTestnet();
-    }
-
-    client.setOperator(
-      AccountId.fromString(operatorId),
-      PrivateKey.fromString(operatorKey)
-    );
-
-    client.setDefaultMaxTransactionFee(new Hbar(100));
-    client.setDefaultMaxQueryPayment(new Hbar(50));
-
-    return client;
-  } catch (error) {
-    console.error("Error initializing Hedera client:", error);
-    throw error;
-  }
+  console.warn("⚠️ Using mock Hedera client - SDK cannot run in browser!");
+  console.warn("⚠️ In production, use a backend API for all Hedera operations");
+  
+  return {
+    operatorId,
+    network,
+    isMock: true
+  };
 }
 
 /**
  * Mint a new NFT for a product
- * @param {Client} client - Hedera client instance
- * @param {string} tokenId - NFT Token ID
- * @param {string} supplyKey - Private key with supply authority
- * @param {string} metadataCID - IPFS CID for product metadata
- * @returns {Promise<Object>} Minting result with serial number and transaction ID
+ * MOCK IMPLEMENTATION - In production, call your backend API
  */
 export async function mintProductNFT(client, tokenId, supplyKey, metadataCID) {
   try {
-    console.log("🔨 Minting new product NFT...");
+    console.log("🔨 Minting new product NFT (MOCK)...");
+    console.warn("⚠️ This is a simulation. In production, call your backend API.");
 
-    // Convert IPFS CID to bytes for metadata
-    const metadata = Buffer.from(metadataCID);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Create and execute mint transaction
-    const mintTx = await new TokenMintTransaction()
-      .setTokenId(tokenId)
-      .setMetadata([metadata])
-      .setMaxTransactionFee(new Hbar(20))
-      .freezeWith(client);
-
-    const signedTx = await mintTx.sign(PrivateKey.fromString(supplyKey));
-    const txResponse = await signedTx.execute(client);
-    const receipt = await txResponse.getReceipt(client);
+    // Generate mock serial number
+    const mockSerial = Date.now().toString().slice(-6);
 
     const result = {
       success: true,
-      serialNumber: receipt.serials[0].toString(),
-      transactionId: txResponse.transactionId.toString(),
+      serialNumber: mockSerial,
+      transactionId: `0.0.${client.operatorId}@${Date.now()}.000000000`,
       metadataCID: metadataCID,
-      tokenId: tokenId
+      tokenId: tokenId,
+      isMock: true
     };
 
-    console.log("✅ NFT minted successfully:", result);
+    console.log("✅ NFT minted successfully (MOCK):", result);
     return result;
 
   } catch (error) {

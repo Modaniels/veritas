@@ -1,73 +1,46 @@
-const {
-  Client,
-  PrivateKey,
-  AccountId,
-  TokenNftInfoQuery,
-  TransferTransaction,
-  TokenId,
-  NftId,
-  Hbar
-} = require("@hashgraph/sdk");
+/**
+ * IMPORTANT: Hedera SDK cannot run in browser!
+ * This is a mock implementation for demo purposes.
+ * In production, all Hedera operations MUST go through a backend API.
+ */
 
 /**
- * Initialize Hedera Client (Browser-compatible version)
+ * Initialize Hedera Client (Mock for browser)
  */
 export function initializeHederaClient(operatorId, operatorKey, network = "testnet") {
-  try {
-    let client;
-    if (network === "mainnet") {
-      client = Client.forMainnet();
-    } else {
-      client = Client.forTestnet();
-    }
-
-    client.setOperator(
-      AccountId.fromString(operatorId),
-      PrivateKey.fromString(operatorKey)
-    );
-
-    client.setDefaultMaxTransactionFee(new Hbar(100));
-    client.setDefaultMaxQueryPayment(new Hbar(50));
-
-    return client;
-  } catch (error) {
-    console.error("Error initializing Hedera client:", error);
-    throw error;
-  }
+  console.warn("⚠️ Using mock Hedera client - SDK cannot run in browser!");
+  console.warn("⚠️ In production, use a backend API for all Hedera operations");
+  
+  return {
+    operatorId,
+    network,
+    isMock: true
+  };
 }
 
 /**
- * Query NFT information by NFC Serial ID
- * In production, this would query a database to map NFC Serial to NFT Serial
+ * Query NFT information by NFC Serial ID (MOCK)
+ * In production, query your database to map NFC Serial to NFT Serial
  */
 export async function queryNFTByNFCSerial(client, tokenId, nfcSerialId) {
   try {
-    console.log(`🔍 Querying NFT for NFC Serial: ${nfcSerialId}`);
+    console.log(`🔍 Querying NFT for NFC Serial: ${nfcSerialId} (MOCK)`);
 
-    // In a real implementation, query your database to get the NFT serial number
-    // For demo purposes, we'll simulate this
-    const mockMapping = {
-      "NFC-04:A1:B2:C3:D4:E5:F6": "1",
-      "NFC-TEST-001": "1"
-    };
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const nftSerialNumber = mockMapping[nfcSerialId] || "1";
-
-    // Query the NFT info from Hedera
-    const nftInfo = await new TokenNftInfoQuery()
-      .setNftId(new NftId(TokenId.fromString(tokenId), nftSerialNumber))
-      .execute(client);
-
+    // Mock NFT data
     const result = {
       tokenId: tokenId,
-      serialNumber: nftSerialNumber,
-      accountId: nftInfo.accountId.toString(),
-      metadata: Buffer.from(nftInfo.metadata).toString(),
-      createdAt: nftInfo.creationTime,
-      nfcSerialId: nfcSerialId
+      serialNumber: "348452", // Mock serial from earlier mint
+      accountId: "0.0.5770350", // Your manufacturer account
+      metadata: "QmMock" + nfcSerialId.replace(/[^a-zA-Z0-9]/g, ''),
+      createdAt: new Date().toISOString(),
+      nfcSerialId: nfcSerialId,
+      isMock: true
     };
 
-    console.log("✅ NFT found:", result);
+    console.log("✅ NFT found (MOCK):", result);
     return result;
 
   } catch (error) {
@@ -77,33 +50,32 @@ export async function queryNFTByNFCSerial(client, tokenId, nfcSerialId) {
 }
 
 /**
- * Get NFT provenance (transaction history)
- * This provides the verifiable history of ownership transfers
+ * Get NFT provenance (transaction history) - MOCK
  */
 export async function getNFTProvenance(tokenId, serialNumber) {
   try {
-    console.log(`📜 Fetching provenance for NFT ${tokenId}/${serialNumber}`);
+    console.log(`📜 Fetching provenance for NFT ${tokenId}/${serialNumber} (MOCK)`);
 
-    // In production, query Hedera Mirror Node API for transaction history
-    // For demo, return mock data
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     const mockProvenance = [
       {
         type: "MINT",
-        timestamp: "2025-10-01T10:00:00Z",
+        timestamp: "2025-10-25T10:00:00Z",
         from: null,
-        to: "0.0.123456",
-        transactionId: "0.0.123456@1696156800.000000000"
+        to: "0.0.5770350",
+        transactionId: "0.0.5770350@1761348452.000000000"
       },
       {
         type: "TRANSFER",
-        timestamp: "2025-10-15T14:30:00Z",
-        from: "0.0.123456",
+        timestamp: "2025-10-25T14:30:00Z",
+        from: "0.0.5770350",
         to: "0.0.789012",
-        transactionId: "0.0.123456@1697378200.000000000"
+        transactionId: "0.0.5770350@1761364200.000000000"
       }
     ];
 
-    console.log("✅ Provenance retrieved");
+    console.log("✅ Provenance retrieved (MOCK)");
     return mockProvenance;
 
   } catch (error) {
@@ -113,14 +85,8 @@ export async function getNFTProvenance(tokenId, serialNumber) {
 }
 
 /**
- * Transfer NFT ownership from manufacturer to customer
- * @param {Client} client - Hedera client
- * @param {string} tokenId - NFT Token ID
- * @param {string} serialNumber - NFT Serial Number
- * @param {string} fromAccountId - Current owner (manufacturer)
- * @param {string} fromPrivateKey - Current owner's private key
- * @param {string} toAccountId - New owner (customer)
- * @returns {Promise<Object>} Transfer result
+ * Transfer NFT ownership - MOCK
+ * In production: Call backend API to execute transfer
  */
 export async function transferNFTOwnership(
   client,
@@ -131,37 +97,23 @@ export async function transferNFTOwnership(
   toAccountId
 ) {
   try {
-    console.log(`🔄 Transferring NFT ownership...`);
+    console.log(`🔄 Transferring NFT ownership (MOCK)...`);
     console.log(`   From: ${fromAccountId}`);
     console.log(`   To: ${toAccountId}`);
 
-    const nftId = new NftId(
-      TokenId.fromString(tokenId),
-      parseInt(serialNumber)
-    );
-
-    // Create transfer transaction
-    const transferTx = await new TransferTransaction()
-      .addNftTransfer(nftId, AccountId.fromString(fromAccountId), AccountId.fromString(toAccountId))
-      .setTransactionMemo(`Veritas ownership transfer - NFC verified`)
-      .freezeWith(client);
-
-    // Sign with current owner's key
-    const signedTx = await transferTx.sign(PrivateKey.fromString(fromPrivateKey));
-    
-    // Execute transaction
-    const txResponse = await signedTx.execute(client);
-    const receipt = await txResponse.getReceipt(client);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const result = {
       success: true,
-      transactionId: txResponse.transactionId.toString(),
-      status: receipt.status.toString(),
+      transactionId: `0.0.${fromAccountId}@${Date.now()}.000000000`,
+      status: "SUCCESS",
       newOwner: toAccountId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      isMock: true
     };
 
-    console.log("✅ NFT transferred successfully:", result);
+    console.log("✅ NFT transferred successfully (MOCK):", result);
     return result;
 
   } catch (error) {
