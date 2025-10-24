@@ -1,0 +1,23 @@
+{
+  "name": "veritas",
+  "version": "1.0.0",
+  "description": "Digital product authentication system using Hedera Token Service NFTs",
+  "private": true,
+  "scripts": {
+    "hedera:init": "cd hedera-setup && node scripts/initializeHedera.js",
+    "hedera:deploy": "cd hedera-setup && node scripts/deployTokens.js",
+    "hub:dev": "cd ledger-hub && npm start",
+    "hub:build": "cd ledger-hub && npm run build",
+    "scan:dev": "cd veritas-scan && npm start",
+    "scan:build": "cd veritas-scan && npm run build"
+  },
+  "keywords": [
+    "hedera",
+    "nft",
+    "authentication",
+    "nfc",
+    "web3"
+  ],
+  "author": "",
+  "license": "MIT"
+}

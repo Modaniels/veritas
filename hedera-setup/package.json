@@ -1,0 +1,19 @@
+{
+  "name": "hedera-setup",
+  "version": "1.0.0",
+  "description": "Hedera Token Service setup and deployment scripts",
+  "main": "index.js",
+  "scripts": {
+    "init": "node scripts/initializeHedera.js",
+    "deploy": "node scripts/deployTokens.js",
+    "mint-test": "node scripts/mintTestNFT.js"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.40.0",
+    "dotenv": "^16.3.1",
+    "ipfs-http-client": "^60.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
