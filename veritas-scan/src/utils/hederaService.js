@@ -19,33 +19,129 @@ export function initializeHederaClient(operatorId, operatorKey, network = "testn
 }
 
 /**
- * Query NFT information by NFC Serial ID (MOCK)
- * In production, query your database to map NFC Serial to NFT Serial
+ * Query NFT information by NFC Serial ID
+ * Uses Hedera Mirror Node API to query real blockchain data
  */
 export async function queryNFTByNFCSerial(client, tokenId, nfcSerialId) {
   try {
-    console.log(`🔍 Querying NFT for NFC Serial: ${nfcSerialId} (MOCK)`);
+    console.log(`🔍 Querying NFT for NFC Serial: ${nfcSerialId}`);
+    console.log(`📡 Token ID: ${tokenId}`);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Mock NFT data
+    // Query Hedera Mirror Node API for ALL NFTs in this token
+    const mirrorNodeUrl = `https://testnet.mirrornode.hedera.com/api/v1/tokens/${tokenId}/nfts`;
+    console.log(`📡 Querying Hedera Mirror Node: ${mirrorNodeUrl}`);
+    
+    const response = await fetch(mirrorNodeUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Mirror Node API returned ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    console.log(`✅ Found ${data.nfts?.length || 0} total NFTs for token ${tokenId}`);
+    
+    if (!data.nfts || data.nfts.length === 0) {
+      throw new Error(`No NFTs found for token ${tokenId}. Please mint products first in the Manufacturer Portal.`);
+    }
+    
+    // Find NFT matching the NFC Serial ID
+    let matchedNFT = null;
+    
+    for (const nft of data.nfts) {
+      // Decode metadata from base64
+      let metadataString = "";
+      let metadataObject = null;
+      
+      if (nft.metadata) {
+        try {
+          // Metadata is base64 encoded
+          const decodedBytes = atob(nft.metadata);
+          metadataString = decodedBytes;
+          
+          // Try to parse as JSON
+          try {
+            metadataObject = JSON.parse(decodedBytes);
+            console.log(`NFT #${nft.serial_number} metadata:`, metadataObject);
+            
+            // Check if this NFT matches the NFC Serial ID
+            // Support both formats: {nfcSerialId: "..."} and {nfc: "..."}
+            const nftNfcId = metadataObject.nfcSerialId || metadataObject.nfc;
+            if (nftNfcId === nfcSerialId) {
+              console.log(`✅ FOUND MATCH! NFT #${nft.serial_number} matches NFC ID ${nfcSerialId}`);
+              matchedNFT = nft;
+              matchedNFT.decodedMetadata = metadataString;
+              matchedNFT.parsedMetadata = metadataObject;
+              break; // Found the match!
+            }
+          } catch (jsonError) {
+            // Metadata might be IPFS CID instead of JSON
+            console.log(`NFT #${nft.serial_number} metadata (non-JSON): ${decodedBytes}`);
+          }
+        } catch (e) {
+          metadataString = nft.metadata;
+          console.warn(`Could not decode metadata for NFT #${nft.serial_number}`);
+        }
+      }
+    }
+    
+    if (!matchedNFT) {
+      // No exact match found - maybe show the most recent NFT as fallback
+      console.warn(`⚠️ No NFT found with NFC Serial ID: ${nfcSerialId}`);
+      console.log(`Available NFTs: ${data.nfts.length}`);
+      
+      // Try to show what NFTs exist
+      data.nfts.forEach((nft, i) => {
+        console.log(`  NFT #${nft.serial_number}: ${nft.metadata ? '(has metadata)' : '(no metadata)'}`);
+      });
+      
+      throw new Error(`NFT with NFC Serial ${nfcSerialId} not found in token ${tokenId}. ${data.nfts.length} NFT(s) exist but none match this NFC ID.`);
+    }
+    
+    console.log("✅ Found matching NFT on Hedera blockchain:", matchedNFT);
+    
     const result = {
       tokenId: tokenId,
-      serialNumber: "348452", // Mock serial from earlier mint
-      accountId: "0.0.5770350", // Your manufacturer account
-      metadata: "QmMock" + nfcSerialId.replace(/[^a-zA-Z0-9]/g, ''),
-      createdAt: new Date().toISOString(),
+      serialNumber: matchedNFT.serial_number.toString(),
+      accountId: matchedNFT.account_id,
+      metadata: matchedNFT.decodedMetadata,
+      metadataObject: matchedNFT.parsedMetadata,
+      createdAt: matchedNFT.created_timestamp,
       nfcSerialId: nfcSerialId,
-      isMock: true
+      isReal: true, // Real blockchain data!
+      fromMirrorNode: true
     };
 
-    console.log("✅ NFT found (MOCK):", result);
+    console.log("✅ NFT verified on blockchain:", result);
     return result;
 
   } catch (error) {
-    console.error("❌ Error querying NFT:", error);
-    throw new Error("NFT not found for this NFC Serial ID");
+    console.error("❌ Error querying NFT from Mirror Node:", error);
+    
+    // Fallback: Try localStorage for demo purposes
+    console.log("⚠️ Falling back to localStorage...");
+    try {
+      const individualProduct = localStorage.getItem(`veritas_${nfcSerialId}`);
+      if (individualProduct) {
+        const productData = JSON.parse(individualProduct);
+        console.log("✅ Found product in localStorage (fallback)");
+        
+        return {
+          tokenId: productData.tokenId || tokenId,
+          serialNumber: productData.nftSerialNumber,
+          accountId: "0.0.5770350",
+          metadata: productData.metadata || "QmMock" + nfcSerialId.replace(/[^a-zA-Z0-9]/g, ''),
+          createdAt: productData.timestamp,
+          nfcSerialId: nfcSerialId,
+          productDetails: productData.productDetails,
+          isMock: true
+        };
+      }
+    } catch (storageError) {
+      console.warn("Could not read from localStorage:", storageError);
+    }
+    
+    throw new Error(`NFT not found. Error: ${error.message}`);
   }
 }
 

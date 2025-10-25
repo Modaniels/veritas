@@ -54,21 +54,37 @@ export async function mintProductNFT(client, tokenId, supplyKey, metadataCID) {
 
 /**
  * Associate NFT metadata with NFC Serial ID
- * In a real implementation, this would store the mapping in a database
+ * Store in localStorage AND sessionStorage for cross-origin demo
  */
 export function associateNFCSerial(nftSerialNumber, nfcSerialId, productDetails) {
   const mapping = {
     nftSerialNumber,
     nfcSerialId,
     productDetails,
+    tokenId: process.env.REACT_APP_NFT_TOKEN_ID,
     timestamp: new Date().toISOString(),
     status: "minted"
   };
 
   console.log("🔗 NFT-NFC Association created:", mapping);
   
-  // TODO: Store in database (e.g., MongoDB, PostgreSQL)
-  // For now, we'll just log it
+  // Store in both localStorage and sessionStorage
+  try {
+    const existingMappings = JSON.parse(localStorage.getItem('veritasProducts') || '{}');
+    existingMappings[nfcSerialId] = mapping;
+    const mappingsStr = JSON.stringify(existingMappings);
+    
+    localStorage.setItem('veritasProducts', mappingsStr);
+    sessionStorage.setItem('veritasProducts', mappingsStr);
+    
+    // Also save individual product for easy access
+    localStorage.setItem(`veritas_${nfcSerialId}`, JSON.stringify(mapping));
+    
+    console.log("💾 Saved to localStorage and sessionStorage");
+    console.log("💾 Total products stored:", Object.keys(existingMappings).length);
+  } catch (error) {
+    console.warn("Could not save to storage:", error);
+  }
   
   return mapping;
 }
