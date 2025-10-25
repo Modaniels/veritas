@@ -9,19 +9,20 @@
 }
 
 .auth-card h2 {
-  color: #f5576c;
+  color: #1e40af;
   margin-bottom: 1rem;
   font-size: 1.8rem;
 }
 
 .auth-description {
-  color: #666;
+  color: #6b7280;
   margin-bottom: 2rem;
   font-size: 1rem;
+  font-weight: 500;
 }
 
 .login-button {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
   color: white;
   border: none;
   padding: 1rem 2.5rem;
@@ -29,17 +30,20 @@
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
 }
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
 }
 
 .login-button:disabled {
@@ -48,9 +52,10 @@
 }
 
 .auth-note {
-  color: #999;
+  color: #6b7280;
   font-size: 0.85rem;
   margin-top: 1rem;
+  font-weight: 500;
 }
 
 .user-info {
@@ -65,7 +70,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -75,24 +80,28 @@
 }
 
 .user-details h3 {
-  color: #333;
+  color: #111827;
   margin-bottom: 0.25rem;
   font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .user-details p {
-  color: #666;
+  color: #6b7280;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .user-details code {
-  background: #f5f5f5;
+  background: #f1f5f9;
   padding: 0.3rem 0.6rem;
   border-radius: 4px;
   font-size: 0.8rem;
-  color: #f5576c;
+  color: #1e40af;
   display: inline-block;
+  border: 1px solid #e2e8f0;
+  font-family: 'Courier New', monospace;
 }
 
 .mock-badge {

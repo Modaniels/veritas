@@ -21,6 +21,7 @@ function MintProduct() {
   const [mintResult, setMintResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -29,6 +30,18 @@ function MintProduct() {
       ...prev,
       [name]: value
     }));
+  };
+
+  /**
+   * Preview product information before minting
+   */
+  const handlePreviewProduct = () => {
+    if (!formData.productName || !formData.nfcSerialId) {
+      setError("Product name and NFC Serial ID are required for preview");
+      return;
+    }
+    setError(null);
+    setShowPreview(true);
   };
 
   /**
@@ -93,14 +106,16 @@ function MintProduct() {
         client,
         tokenId,
         supplyKey,
-        metadataCID
+        metadataCID,
+        productMetadata
       );
 
       // Step 5: Associate NFT with NFC Serial ID
       const association = associateNFCSerial(
         mintingResult.serialNumber,
         formData.nfcSerialId,
-        productMetadata
+        productMetadata,
+        metadataCID
       );
 
       // Step 6: Display success result
@@ -227,21 +242,89 @@ function MintProduct() {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="mint-button"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <span className="spinner"></span>
-                Minting...
-              </>
-            ) : (
-              '🔨 Mint Product NFT'
-            )}
-          </button>
+          <div className="button-group">
+            <button
+              type="button"
+              onClick={handlePreviewProduct}
+              className="preview-button"
+              disabled={loading}
+            >
+              👁️ Preview Product
+            </button>
+
+            <button 
+              type="submit" 
+              className="mint-button"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Minting...
+                </>
+              ) : (
+                '🔨 Mint Product NFT'
+              )}
+            </button>
+          </div>
         </form>
+
+        {/* Product Preview */}
+        {showPreview && (
+          <div className="product-summary">
+            <div className="mint-badge">
+              📦 PRODUCT PREVIEW
+            </div>
+
+            <h3>📦 Product Information</h3>
+            <div className="info-grid">
+              {formData.productName && (
+                <div className="info-item">
+                  <strong>Product Name:</strong>
+                  <span>{formData.productName}</span>
+                </div>
+              )}
+              {formData.productCategory && (
+                <div className="info-item">
+                  <strong>Category:</strong>
+                  <span>{formData.productCategory}</span>
+                </div>
+              )}
+              {formData.manufacturer && (
+                <div className="info-item">
+                  <strong>Manufacturer:</strong>
+                  <span>{formData.manufacturer}</span>
+                </div>
+              )}
+              {formData.manufacturingDate && (
+                <div className="info-item">
+                  <strong>Manufacturing Date:</strong>
+                  <span>{formData.manufacturingDate}</span>
+                </div>
+              )}
+              {formData.serialNumber && (
+                <div className="info-item">
+                  <strong>Serial Number:</strong>
+                  <span>{formData.serialNumber}</span>
+                </div>
+              )}
+              {formData.description && (
+                <div className="info-item">
+                  <strong>Description:</strong>
+                  <span>{formData.description}</span>
+                </div>
+              )}
+            </div>
+
+            <h3>🔗 NFC Details</h3>
+            <div className="info-grid">
+              <div className="info-item">
+                <strong>NFC Serial ID:</strong>
+                <code>{formData.nfcSerialId}</code>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
@@ -253,33 +336,57 @@ function MintProduct() {
         {/* Success Result Display */}
         {mintResult && (
           <div className="success-message">
-            <h3>✅ Product NFT Minted Successfully!</h3>
-            <div className="result-details">
-              <div className="result-item">
+            <h3>✅ Product Authentication Complete</h3>
+            
+            <div className="success-badge">
+              🔐 BLOCKCHAIN-AUTHENTICATED PRODUCT
+            </div>
+            
+            <h3>🔗 Blockchain Details</h3>
+            <div className="info-grid">
+              <div className="info-item">
                 <strong>NFT Serial Number:</strong>
                 <code>{mintResult.serialNumber}</code>
               </div>
-              <div className="result-item">
+              <div className="info-item">
                 <strong>Token ID:</strong>
                 <code>{mintResult.tokenId}</code>
               </div>
-              <div className="result-item">
+              <div className="info-item">
                 <strong>Transaction ID:</strong>
                 <code>{mintResult.transactionId}</code>
               </div>
-              <div className="result-item">
+              <div className="info-item">
                 <strong>NFC Serial ID:</strong>
                 <code>{mintResult.association.nfcSerialId}</code>
               </div>
-              <div className="result-item">
-                <strong>Metadata CID:</strong>
+              <div className="info-item">
+                <strong>Real IPFS Hash:</strong>
                 <code>{mintResult.metadataCID}</code>
               </div>
-              <div className="result-item">
-                <strong>IPFS URL:</strong>
+              <div className="info-item">
+                <strong>Pinata Gateway:</strong>
                 <a href={mintResult.ipfsUrl} target="_blank" rel="noopener noreferrer">
-                  {mintResult.ipfsUrl}
+                  View Real Metadata on IPFS ↗
                 </a>
+              </div>
+              <div className="info-item">
+                <strong>HashScan (Hedera Explorer):</strong>
+                <a href={mintResult.hashscanUrl} target="_blank" rel="noopener noreferrer">
+                  View on Blockchain ↗
+                </a>
+              </div>
+            </div>
+
+            <div className="success-note">
+              <h4>✅ Authentication Complete</h4>
+              <p>Your product has been secured on the blockchain and can now be verified.</p>
+              
+              <div style={{marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.2)', borderRadius: '8px'}}>
+                <h4 style={{margin: '0 0 0.5rem 0', color: 'white'}}>🔍 To Verify This Product:</h4>
+                <p style={{margin: 0, color: 'white'}}>
+                  Use the Veritas Scan app with NFC Serial ID: <code style={{background: 'rgba(0,0,0,0.3)', padding: '2px 4px'}}>{mintResult.association.nfcSerialId}</code>
+                </p>
               </div>
             </div>
           </div>

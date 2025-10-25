@@ -5,60 +5,73 @@ export async function uploadMetadataToIPFS(productData) {
   try {
     console.log("📤 Uploading metadata to Pinata IPFS...");
 
-    const PINATA_API_KEY = process.env.REACT_APP_PINATA_API_KEY || "7ca24e5db34c1a42bdf4";
-    const PINATA_API_SECRET = process.env.REACT_APP_PINATA_API_SECRET;
+    const PINATA_JWT = process.env.REACT_APP_PINATA_JWT || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5YmU2YzFiMi1iZTA4LTRmMzctYjBjZC1lYjU5ODBjYzJkMTgiLCJlbWFpbCI6Im1vZGFuaWVsczUwN0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNzBiZTM0MDFmNGY1YzUxYjE3NmIiLCJzY29wZWRLZXlTZWNyZXQiOiJlZjJiMDhlMTdjMjRhODI2ZGE4OTFkZmIxNTcwZWU2ZjgxNDI2ODRhMmY3ZDFmY2EwNjg0MDRkODE0N2Y5MjkwIiwiZXhwIjoxNzkyODg3MTc4fQ.zt12nhZnDLrt41LuuTlYUNrA2tKzQP8M2ViFIXnc4JM";
 
-    // Prepare metadata JSON
+    if (!PINATA_JWT) {
+      throw new Error("PINATA_JWT not configured in environment variables");
+    }
+
+    // Prepare metadata JSON in NFT standard format
     const metadata = {
-      ...productData,
-      timestamp: new Date().toISOString(),
-      uploadedToPinata: true
+      name: productData.productName || productData.name,
+      description: productData.description || `Veritas authenticated product: ${productData.productName || productData.name}`,
+      image: productData.image || "",
+      attributes: [
+        { trait_type: "NFC_Serial_ID", value: productData.nfcSerialId },
+        { trait_type: "Category", value: productData.productCategory || productData.category || "General" },
+        { trait_type: "Manufacturer", value: productData.manufacturer || "Veritas Corp" },
+        { trait_type: "Manufacturing_Date", value: productData.manufacturingDate || new Date().toISOString().split('T')[0] },
+        { trait_type: "Serial_Number", value: productData.serialNumber || `VER-${Date.now()}` },
+        { trait_type: "Timestamp", value: new Date().toISOString() }
+      ],
+      // Additional Veritas-specific metadata
+      veritas: {
+        ...productData,
+        timestamp: new Date().toISOString(),
+        uploadedToPinata: true,
+        version: "1.0"
+      }
     };
 
-    try {
-      // Pin JSON to Pinata
-      const url = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
-      
-      const body = {
-        pinataContent: metadata,
-        pinataMetadata: {
-          name: `veritas-product-${productData.nfcSerialId || Date.now()}.json`,
-        }
-      };
+    console.log("📋 Metadata prepared:", metadata);
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'pinata_api_key': PINATA_API_KEY,
-          ...(PINATA_API_SECRET && { 'pinata_secret_api_key': PINATA_API_SECRET })
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const realCID = data.IpfsHash;
-        console.log(`✅ Metadata uploaded to Pinata: ${realCID}`);
-        console.log(`🌐 Gateway URL: https://jade-known-chimpanzee-227.mypinata.cloud/ipfs/${realCID}`);
-        return realCID;
-      } else {
-        const errorText = await response.text();
-        console.warn(`⚠️ Pinata API returned ${response.status}: ${errorText}`);
-        throw new Error(`Pinata upload failed: ${response.status}`);
+    // Pin JSON to Pinata using JWT authentication
+    const url = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
+    
+    const body = {
+      pinataContent: metadata,
+      pinataMetadata: {
+        name: `Veritas-${productData.nfcSerialId || Date.now()}.json`,
       }
-    } catch (pinataError) {
-      console.warn("Could not upload to Pinata, using fallback:", pinataError);
-      
-      // Fallback to mock CID
-      const mockCID = `QmMock${Date.now()}${Math.random().toString(36).substring(7)}`;
-      console.log(`⚠️ Using mock CID (Pinata unavailable): ${mockCID}`);
-      return mockCID;
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PINATA_JWT}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Pinata API error ${response.status}:`, errorText);
+      throw new Error(`Pinata upload failed: ${response.status} - ${errorText}`);
     }
+
+    const data = await response.json();
+    const realCID = data.IpfsHash;
+    
+    console.log(`✅ Metadata uploaded to Pinata successfully!`);
+    console.log(`📄 IPFS Hash: ${realCID}`);
+    console.log(`🌐 Gateway URL: https://jade-known-chimpanzee-227.mypinata.cloud/ipfs/${realCID}`);
+    
+    return realCID;
 
   } catch (error) {
     console.error("❌ Error uploading to IPFS:", error);
-    throw error;
+    throw new Error(`Failed to upload metadata to Pinata: ${error.message}`);
   }
 }
 

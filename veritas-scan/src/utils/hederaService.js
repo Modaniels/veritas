@@ -4,6 +4,8 @@
  * In production, all Hedera operations MUST go through a backend API.
  */
 
+import { getMetadataFromIPFS } from './ipfsService';
+
 /**
  * Initialize Hedera Client (Mock for browser)
  */
@@ -48,7 +50,12 @@ export async function queryNFTByNFCSerial(client, tokenId, nfcSerialId) {
     // Find NFT matching the NFC Serial ID
     let matchedNFT = null;
     
+    console.log(`🔍 Looking for NFC Serial ID: "${nfcSerialId}"`);
+    console.log(`📋 Checking ${data.nfts.length} NFTs...`);
+    
     for (const nft of data.nfts) {
+      console.log(`\n🔍 Checking NFT #${nft.serial_number}:`);
+      
       // Decode metadata from base64
       let metadataString = "";
       let metadataObject = null;
@@ -59,43 +66,162 @@ export async function queryNFTByNFCSerial(client, tokenId, nfcSerialId) {
           const decodedBytes = atob(nft.metadata);
           metadataString = decodedBytes;
           
-          // Try to parse as JSON
-          try {
-            metadataObject = JSON.parse(decodedBytes);
-            console.log(`NFT #${nft.serial_number} metadata:`, metadataObject);
+          console.log(`   📄 Raw metadata: "${metadataString}"`);
+          
+          // Check for format: "nfcSerialId:ipfsCID"
+          if (metadataString.includes(':')) {
+            const parts = metadataString.split(':');
+            const nftNfcId = parts[0];
+            const ipfsCID = parts[1];
             
-            // Check if this NFT matches the NFC Serial ID
-            // Support both formats: {nfcSerialId: "..."} and {nfc: "..."}
-            const nftNfcId = metadataObject.nfcSerialId || metadataObject.nfc;
+            console.log(`   🏷️  Extracted NFC ID: "${nftNfcId}"`);
+            console.log(`   📦 IPFS CID: "${ipfsCID}"`);
+            console.log(`   🔄 Comparing "${nftNfcId}" === "${nfcSerialId}"`);
+            
             if (nftNfcId === nfcSerialId) {
               console.log(`✅ FOUND MATCH! NFT #${nft.serial_number} matches NFC ID ${nfcSerialId}`);
-              matchedNFT = nft;
-              matchedNFT.decodedMetadata = metadataString;
-              matchedNFT.parsedMetadata = metadataObject;
-              break; // Found the match!
+              
+              // Fetch actual metadata from Pinata
+              try {
+                const ipfsMetadata = await getMetadataFromIPFS(ipfsCID);
+                console.log(`📦 Fetched metadata from IPFS:`, ipfsMetadata);
+                
+                matchedNFT = nft;
+                matchedNFT.decodedMetadata = metadataString;
+                matchedNFT.parsedMetadata = ipfsMetadata;
+                matchedNFT.ipfsCID = ipfsCID;
+                break; // Found the match!
+              } catch (ipfsError) {
+                console.error(`Failed to fetch IPFS metadata for CID ${ipfsCID}:`, ipfsError);
+                // Continue - we might still use the NFC match
+                matchedNFT = nft;
+                matchedNFT.decodedMetadata = metadataString;
+                matchedNFT.parsedMetadata = { nfcSerialId: nftNfcId, ipfsCID };
+                break;
+              }
+            } else {
+              console.log(`   ❌ No match: "${nftNfcId}" !== "${nfcSerialId}"`);
             }
-          } catch (jsonError) {
-            // Metadata might be IPFS CID instead of JSON
-            console.log(`NFT #${nft.serial_number} metadata (non-JSON): ${decodedBytes}`);
+          } else {
+            // Try to parse as JSON
+            try {
+              metadataObject = JSON.parse(decodedBytes);
+              console.log(`   📋 JSON metadata:`, metadataObject);
+              
+              // Check if this NFT matches the NFC Serial ID
+              // Support both formats: {nfcSerialId: "..."} and {nfc: "..."}
+              const nftNfcId = metadataObject.nfcSerialId || metadataObject.nfc;
+              console.log(`   🏷️  JSON NFC ID: "${nftNfcId}"`);
+              
+              if (nftNfcId === nfcSerialId) {
+                console.log(`✅ FOUND MATCH! NFT #${nft.serial_number} matches NFC ID ${nfcSerialId}`);
+                matchedNFT = nft;
+                matchedNFT.decodedMetadata = metadataString;
+                matchedNFT.parsedMetadata = metadataObject;
+                break; // Found the match!
+              } else {
+                console.log(`   ❌ No JSON match: "${nftNfcId}" !== "${nfcSerialId}"`);
+              }
+            } catch (jsonError) {
+              // Metadata might be plain text or unstructured
+              console.log(`   📄 Non-JSON metadata: "${decodedBytes}"`);
+              
+              // Check if the plain text contains the NFC ID
+              if (decodedBytes.includes(nfcSerialId)) {
+                console.log(`✅ FOUND MATCH in plain text! NFT #${nft.serial_number}`);
+                matchedNFT = nft;
+                matchedNFT.decodedMetadata = metadataString;
+                matchedNFT.parsedMetadata = { rawMetadata: decodedBytes, nfcSerialId };
+                break;
+              }
+            }
           }
         } catch (e) {
           metadataString = nft.metadata;
-          console.warn(`Could not decode metadata for NFT #${nft.serial_number}`);
+          console.warn(`   ❌ Could not decode metadata for NFT #${nft.serial_number}:`, e);
         }
+      } else {
+        console.log(`   ⚠️  NFT #${nft.serial_number} has no metadata`);
       }
     }
     
     if (!matchedNFT) {
-      // No exact match found - maybe show the most recent NFT as fallback
+      // No exact match found - show detailed debug info
       console.warn(`⚠️ No NFT found with NFC Serial ID: ${nfcSerialId}`);
-      console.log(`Available NFTs: ${data.nfts.length}`);
+      console.log(`📊 Found ${data.nfts.length} NFTs total:`);
       
-      // Try to show what NFTs exist
+      // Show what NFTs exist with their metadata
       data.nfts.forEach((nft, i) => {
-        console.log(`  NFT #${nft.serial_number}: ${nft.metadata ? '(has metadata)' : '(no metadata)'}`);
+        console.log(`\n📋 NFT #${nft.serial_number}:`);
+        if (nft.metadata) {
+          try {
+            const decoded = atob(nft.metadata);
+            console.log(`   📄 Metadata: "${decoded}"`);
+            
+            // Try to extract NFC ID
+            if (decoded.includes(':')) {
+              const parts = decoded.split(':');
+              console.log(`   🏷️  Contains NFC ID: "${parts[0]}"`);
+            }
+          } catch (e) {
+            console.log(`   ❌ Could not decode metadata`);
+          }
+        } else {
+          console.log(`   ⚠️  No metadata`);
+        }
       });
       
-      throw new Error(`NFT with NFC Serial ${nfcSerialId} not found in token ${tokenId}. ${data.nfts.length} NFT(s) exist but none match this NFC ID.`);
+      // Try localStorage fallback
+      console.log(`\n🔍 Checking localStorage for NFC ID: ${nfcSerialId}`);
+      try {
+        const veritasProducts = JSON.parse(localStorage.getItem('veritasProducts') || '{}');
+        console.log(`📦 localStorage has ${Object.keys(veritasProducts).length} products:`, Object.keys(veritasProducts));
+        
+        if (veritasProducts[nfcSerialId]) {
+          console.log(`✅ Found ${nfcSerialId} in localStorage!`);
+          const productData = veritasProducts[nfcSerialId];
+          
+          return {
+            tokenId: productData.tokenId || tokenId,
+            serialNumber: productData.nftSerialNumber,
+            accountId: "0.0.5770350",
+            metadata: productData.ipfsCID ? `${nfcSerialId}:${productData.ipfsCID}` : JSON.stringify(productData.productDetails),
+            parsedMetadata: productData.productDetails,
+            ipfsCID: productData.ipfsCID,
+            createdAt: productData.timestamp,
+            nfcSerialId: nfcSerialId,
+            fromLocalStorage: true,
+            gatewayUrl: productData.gatewayUrl
+          };
+        }
+        
+        // If exact match not found, try to find any NFC ID that contains the search term
+        for (const [storedNfcId, productData] of Object.entries(veritasProducts)) {
+          if (storedNfcId.includes(nfcSerialId) || nfcSerialId.includes(storedNfcId)) {
+            console.log(`🔍 Found partial match: "${storedNfcId}" contains "${nfcSerialId}"`);
+            
+            return {
+              tokenId: productData.tokenId || tokenId,
+              serialNumber: productData.nftSerialNumber,
+              accountId: "0.0.5770350",
+              metadata: productData.ipfsCID ? `${storedNfcId}:${productData.ipfsCID}` : JSON.stringify(productData.productDetails),
+              parsedMetadata: productData.productDetails,
+              ipfsCID: productData.ipfsCID,
+              createdAt: productData.timestamp,
+              nfcSerialId: storedNfcId, // Use the actual stored NFC ID
+              fromLocalStorage: true,
+              partialMatch: true,
+              searchedFor: nfcSerialId,
+              gatewayUrl: productData.gatewayUrl
+            };
+          }
+        }
+        
+      } catch (storageError) {
+        console.warn("Could not read from localStorage:", storageError);
+      }
+      
+      throw new Error(`NFT with NFC Serial "${nfcSerialId}" not found in token ${tokenId}. ${data.nfts.length} NFT(s) exist but none match this NFC ID. Check the console for detailed NFT information.`);
     }
     
     console.log("✅ Found matching NFT on Hedera blockchain:", matchedNFT);

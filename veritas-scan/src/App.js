@@ -8,6 +8,26 @@ function App() {
 
   return (
     <div className="App">
+      {/* Animated Background Elements */}
+      <div className="circuit-pattern"></div>
+      <div className="tech-elements">
+        <div className="tech-element">⚡</div>
+        <div className="tech-element">🔗</div>
+        <div className="tech-element">🖥️</div>
+        <div className="tech-element">🔒</div>
+        <div className="tech-element">📱</div>
+        <div className="tech-element">🌐</div>
+      </div>
+      <div className="blockchain-nodes">
+        <div className="blockchain-node"></div>
+        <div className="blockchain-node"></div>
+        <div className="blockchain-node"></div>
+        <div className="blockchain-node"></div>
+        <div className="connection-line"></div>
+        <div className="connection-line"></div>
+        <div className="connection-line"></div>
+      </div>
+      
       <header className="App-header">
         <h1>🔍 Veritas Scan</h1>
         <p>Product Authentication & Ownership Transfer</p>

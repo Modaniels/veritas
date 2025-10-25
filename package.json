@@ -6,6 +6,7 @@
   "scripts": {
     "hedera:init": "cd hedera-setup && node scripts/initializeHedera.js",
     "hedera:deploy": "cd hedera-setup && node scripts/deployTokens.js",
+    "api": "node api-server.js",
     "hub:dev": "cd ledger-hub && npm start",
     "hub:build": "cd ledger-hub && npm run build",
     "scan:dev": "cd veritas-scan && npm start",
@@ -19,5 +20,11 @@
     "web3"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@hashgraph/sdk": "^2.75.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0"
+  }
 }

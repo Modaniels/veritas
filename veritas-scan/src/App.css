@@ -5,20 +5,23 @@
 }
 
 .App-header {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
   padding: 2rem;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .App-header h1 {
-  color: #f5576c;
+  color: #60a5fa;
   margin-bottom: 0.5rem;
   font-size: 2.5rem;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
 .App-header p {
-  color: #666;
+  color: #cbd5e1;
   font-size: 1.1rem;
 }
 

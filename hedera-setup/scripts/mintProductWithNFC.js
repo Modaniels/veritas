@@ -138,14 +138,14 @@ async function mintProductNFT(productData) {
 // Example usage
 if (require.main === module) {
   const exampleProduct = {
-    name: "Premium Wireless Headphones",
-    description: "High-quality wireless headphones with noise cancellation",
-    category: "Electronics",
+    name: "Premium Leather Wallet",
+    description: "Handcrafted premium leather wallet with RFID protection",
+    category: "Accessories",
     manufacturer: "Veritas Corp",
     manufacturingDate: "2025-10-25",
-    serialNumber: "SN-2025-HP-001",
-    nfcSerialId: "ncfdvfttty", // The NFC ID you want to verify
-    image: "https://example.com/product-image.jpg" // Optional
+    serialNumber: "SN-2025-WL-002",
+    nfcSerialId: "fgthbnm", // The NFC ID you want to verify
+    image: "https://example.com/wallet-image.jpg" // Optional
   };
 
   mintProductNFT(exampleProduct)
